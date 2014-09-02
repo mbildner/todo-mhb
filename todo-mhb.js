@@ -19,7 +19,8 @@ function TodoWidget (root) {
     return node;
   }
 
-  var str = '<div class="task {{func:getCompleteClass}}"><span>{{taskName}}</span><input type="checkbox" {{func:getIsChecked}}></div>';
+  var TASK_TEMPLATE_STR = '<div class="task {{func:getCompleteClass}}"><span>{{taskName}}</span><input type="checkbox" {{func:getIsChecked}}></div>';
+  var BRACES_REGEX = /\{\{(.*?)\}\}/g;
 
   var tasks = [
     {name: 'eat chicken', isComplete: false},
@@ -68,7 +69,7 @@ function TodoWidget (root) {
       isChecked: task.isComplete ? 'checked' : ''
     };
 
-    var html = str.replace(/\{\{(.*?)\}\}/g, function (toReplaceWithBraces, toReplace) {
+    var html = TASK_TEMPLATE_STR.replace(BRACES_REGEX, function (toReplaceWithBraces, toReplace) {
       var isBool;
       var replacementKey;
       var asArray = toReplace.split(':');

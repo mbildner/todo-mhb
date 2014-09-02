@@ -1,6 +1,14 @@
 var rootElement = document.getElementById('todo-mhb-root');
 
 function TodoWidget (root) {
+
+  var VIEW_PARTIAL = '<h2>Add task</h2>' +
+    '<input type="text"><button>Add</button>' +
+    '<h2>To Do</h2>' +
+    '<ol></ol>';
+
+  root.innerHTML = VIEW_PARTIAL;
+
   var addTaskButton = root.querySelector('button');
   var addTaskInput = root.querySelector('input[type="text"]');
   var todoItemsList = root.querySelector('ol');

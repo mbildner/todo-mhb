@@ -1,6 +1,52 @@
-var rootElement = document.getElementById('todo-mhb-root');
+var firstRoot = document.getElementById('first-root');
+var secondRoot = document.getElementById('second-root');
 
-function TodoWidget (root) {
+function dataStoreFactory (modelFactory) {
+
+  var store = []
+  var callbacks = [];
+
+  var model = {};
+
+  function processCallbacks () {
+    callbacks.forEach(function (func) {
+      func(model.getAll());
+    });
+  }
+
+  model.addChangeCallback = function (callback) {
+    callbacks.push(callback);
+  };
+
+  model.getAll = function () {
+    return store;
+  };
+
+  model.get = function (index) {
+    return store[index];
+  };
+
+  // @todo refactor - build a broadcast function that fires processCallbacks at end
+  model.addTask = function (name, isComplete) {
+    var task = modelFactory(name, isComplete);
+    store.push(task);
+
+    processCallbacks();
+  };
+
+  // @todo refactor - build a broadcast function that fires processCallbacks at end
+  model.toggleComplete = function (index) {
+    store[index].isComplete = !store[index].isComplete;
+
+    processCallbacks();
+  };
+
+  return model;
+}
+
+
+
+function ToDoListWidget (root, dataModel) {
 
   var VIEW_PARTIAL = '<h2>Add task</h2>' +
     '<input type="text"><button>Add</button>' +
@@ -30,28 +76,18 @@ function TodoWidget (root) {
   var TASK_TEMPLATE_STR = '<div class="task {{func:getCompleteClass}}"><span>{{taskName}}</span><input type="checkbox" {{func:getIsChecked}}></div>';
   var BRACES_REGEX = /\{\{(.*?)\}\}/g;
 
-  var tasks = [
-    {name: 'eat chicken', isComplete: false},
-    {name: 'read a book', isComplete: true},
-    {name: 'eat chicken', isComplete: false}
-  ];
-
-  this.addTask = addTask;
   this.render = function () {
     renderTask(tasks, todoItemsList);
   }
-
 
   function handleCheckboxClick (event) {
     var checkbox = event.currentTarget;
     var li = checkbox.parentNode.parentNode;
     var ol = li.parentNode;
     var index = toArray(ol.children).indexOf(li);
-    var task = tasks[index];
 
-    task.isComplete = !task.isComplete;
-    renderTasks(tasks, ol);
-
+    tasks.toggleComplete(index);
+    // renderTasks(tasks, ol);
   }
 
   function attachCheckboxListeners (checkboxes) {
@@ -100,11 +136,10 @@ function TodoWidget (root) {
     todoItemsList.appendChild(listItem);
   }
 
-  function renderTasks (tasksArr, rootListNode) {
-
+  function renderTasks (dataModel, rootListNode) {
     var todoItemsList = clearNode(rootListNode);
 
-    tasksArr.forEach(renderTask);
+    dataModel.getAll().forEach(renderTask);
 
     var todoItemsInputs = toArray(document.getElementsByTagName('input'));
 
@@ -116,29 +151,52 @@ function TodoWidget (root) {
   }
 
   function addTask (name, isComplete) {
-    tasks.push({
-      name: name,
-      isComplete: isComplete
-    });
+    dataModel.addTask(name, isComplete);
   }
 
-  function initialize (tasks, rootListNode, addTaskButton) {
-    renderTasks(tasks, todoItemsList);
+  function initialize (dataModel, rootListNode, addTaskButton) {
+    renderTasks(dataModel, todoItemsList);
 
     addTaskButton.addEventListener('click', function () {
       var taskName = addTaskInput.value;
       var isComplete = false;
 
       if (!taskName || taskName === '') {return}
-
       addTask(taskName, isComplete);
-      renderTasks(tasks, todoItemsList);
+
     });
+
+    dataModel.addChangeCallback(function () {
+      renderTasks(dataModel, todoItemsList);
+    });
+
   }
 
   initialize(tasks, todoItemsList, addTaskButton);
 }
 
 
-var todoWidget = new TodoWidget(rootElement);
+function todoItemFactory (name, isComplete) {
+  var todo = {};
+  todo.name = name;
+  todo.isComplete = isComplete;
+
+  return todo;
+}
+
+var tasks = dataStoreFactory(todoItemFactory);
+
+(function () {
+  [{name: 'eat chicken', isComplete: false},
+    {name: 'read a book', isComplete: true},
+    {name: 'eat chicken', isComplete: false}
+  ].forEach(function (taskDict) {
+    tasks.addTask(taskDict.name, taskDict.isComplete);
+  });
+})()
+
+var firstTodo = new ToDoListWidget(firstRoot, tasks);
+var secondTodo = new ToDoListWidget(secondRoot, tasks);
+
+
 
